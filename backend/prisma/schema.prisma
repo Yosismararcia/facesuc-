@@ -1,0 +1,104 @@
+// Esquema relacional en 3FN para el sistema de constancias de notas (FACES - UC).
+// Ejecutar: npx prisma db push   (o prisma migrate dev en desarrollo)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Rol {
+  ROOT
+  ADMIN
+}
+
+// ---------------------------------------------------------------------------
+// Programas de postgrado (Maestrías, Especializaciones, Doctorados).
+// ---------------------------------------------------------------------------
+model Programa {
+  id          Int          @id @default(autoincrement())
+  codigo      String       @unique @map("codigo_programa") @db.VarChar(20)
+  descripcion String       @map("desc_programa") @db.VarChar(255)
+  creadoEn    DateTime     @default(now()) @map("creado_en") @db.Timestamp(3)
+  estudiantes Estudiante[]
+  asignaturas Asignatura[]
+
+  @@map("programas")
+}
+
+// ---------------------------------------------------------------------------
+// Estudiantes identificados de forma única por cédula.
+// ---------------------------------------------------------------------------
+model Estudiante {
+  id         Int             @id @default(autoincrement())
+  cedula     String          @unique @db.VarChar(20)
+  nombres    String          @db.VarChar(255)
+  programaId Int             @map("programa_id")
+  creadoEn   DateTime        @default(now()) @map("creado_en") @db.Timestamp(3)
+  programa   Programa        @relation(fields: [programaId], references: [id], onDelete: Restrict)
+  notas      HistoricoNota[]
+
+  @@index([programaId], map: "idx_estudiantes_programa")
+  @@map("estudiantes")
+}
+
+// ---------------------------------------------------------------------------
+// Catálogo de asignaturas (código único). La UC y el nivel son atributos
+// propios de la asignatura dentro del programa.
+// ---------------------------------------------------------------------------
+model Asignatura {
+  id          Int             @id @default(autoincrement())
+  codigo      String          @unique @map("codigo_asignatura") @db.VarChar(30)
+  descripcion String          @map("desc_asignatura") @db.VarChar(255)
+  nivel       Int             @default(0)
+  uc          Int             @default(0)
+  programaId  Int             @map("programa_id")
+  programa    Programa        @relation(fields: [programaId], references: [id], onDelete: Restrict)
+  notas       HistoricoNota[]
+
+  @@index([programaId], map: "idx_asignaturas_programa")
+  @@map("asignaturas")
+}
+
+// ---------------------------------------------------------------------------
+// Usuarios internos (root / administradores). Contraseña con hash bcrypt.
+// ---------------------------------------------------------------------------
+model Usuario {
+  id           Int      @id @default(autoincrement())
+  cedula       String   @unique @db.VarChar(20)
+  email        String?  @unique @db.VarChar(255)
+  nombre       String   @db.VarChar(255)
+  passwordHash String   @map("password_hash") @db.VarChar(255)
+  rol          Rol      @default(ADMIN)
+  activo       Boolean  @default(true)
+  creadoEn     DateTime @default(now()) @map("creado_en") @db.Timestamp(3)
+
+  @@map("usuarios")
+}
+
+// ---------------------------------------------------------------------------
+// Hechos académicos: una nota por estudiante/asignatura/período/año lectivo.
+// ---------------------------------------------------------------------------
+model HistoricoNota {
+  id              Int         @id @default(autoincrement())
+  estudianteId    Int         @map("estudiante_id")
+  asignaturaId    Int         @map("asignatura_id")
+  periodoLectivo  String      @map("periodo_lectivo") @db.VarChar(30)
+  annoLectivo     String      @map("anno_lectivo") @db.VarChar(10)
+  seccion         String      @default("") @db.VarChar(20)
+  notaFinal       Float       @map("nota_final")
+  aprobada        Boolean     @default(false)
+  calculoPromedio Float?      @map("calculo_promedio")
+  nombreProfesor  String?     @map("nombre_profesor") @db.VarChar(255)
+  creadoEn        DateTime    @default(now()) @map("creado_en") @db.Timestamp(3)
+  estudiante      Estudiante  @relation(fields: [estudianteId], references: [id], onDelete: Cascade)
+  asignatura      Asignatura  @relation(fields: [asignaturaId], references: [id], onDelete: Restrict)
+
+  @@unique([estudianteId, asignaturaId, periodoLectivo, annoLectivo], map: "uq_historico_notas")
+  @@index([estudianteId], map: "idx_historico_estudiante")
+  @@index([asignaturaId], map: "idx_historico_asignatura")
+  @@map("historico_notas")
+}

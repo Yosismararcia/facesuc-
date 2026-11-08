@@ -1,0 +1,89 @@
+name: facesuc-constancias
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: facesuc-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-facesuc}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-facesuc_dev_password}
+      POSTGRES_DB: ${POSTGRES_DB:-facesuc}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-facesuc} -d ${POSTGRES_DB:-facesuc}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      - facesuc-net
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: facesuc-backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-facesuc}:${POSTGRES_PASSWORD:-facesuc_dev_password}@db:5432/${POSTGRES_DB:-facesuc}?schema=public
+      JWT_SECRET: ${JWT_SECRET:-cambia_este_secreto_por_uno_largo_y_aleatorio_2026}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-8h}
+      CORS_ORIGIN: "${CORS_ORIGIN:-http://localhost:5173}"
+      TEMPLATE_PATH: /app/templates/Notas.docx
+      ADMIN_CEDULA: ${ADMIN_CEDULA:-12345678}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-Cambiar123!}
+      ADMIN_NOMBRE: ${ADMIN_NOMBRE:-Prof. Administradora FACES}
+      ROOT_CEDULA: ${ROOT_CEDULA:-00000000}
+      ROOT_EMAIL: ${ROOT_EMAIL:-dticucfaces@gmail.com}
+      ROOT_PASSWORD: ${ROOT_PASSWORD:-Cambiar123!}
+      ROOT_NOMBRE: ${ROOT_NOMBRE:-Super Usuario ROOT FACES}
+      LOGO_UC_PATH: /app/templates/logos/uc.png
+      LOGO_FACES_PATH: /app/templates/logos/faces.png
+      IMPORT_CSV_ON_START: ${IMPORT_CSV_ON_START:-false}
+      CSV_PATH: ${CSV_PATH:-/app/data/baseDeDatosSistemaConstancia.csv}
+    volumes:
+      # Permite reemplazar Notas.docx sin reconstruir la imagen.
+      - ./backend/templates:/app/templates
+      # Dataset fuente para la importación manual/automática.
+      - ./backend/data:/app/data:ro
+    ports:
+      - "${BACKEND_PORT:-4000}:4000"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:4000/api/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+    networks:
+      - facesuc-net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: facesuc-frontend
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-5173}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - facesuc-net
+
+volumes:
+  pgdata:
+    name: facesuc-pgdata
+
+networks:
+  facesuc-net:
+    name: facesuc-net
+    driver: bridge

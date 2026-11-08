@@ -1,0 +1,10 @@
+cedula,nombres,codigo_programa,desc_programa,periodo_lectivo,anno_lectivo,codigo_asignatura,desc_asignatura,nivel,uc,seccion,nota_final,aprobada,calculo_promedio,nombre_profesor
+12345678,Ana María Pérez Rojas,001,Maestría en Gerencia Empresarial,1-2024,2024,MGE-01,Gerencia Estratégica,1,4,A,18,SI,18,Prof. Luis Martínez
+12345678,Ana María Pérez Rojas,001,Maestría en Gerencia Empresarial,1-2024,2024,MGE-02,Contabilidad Gerencial,1,3,A,17,SI,17,Prof. Carmen Díaz
+12345678,Ana María Pérez Rojas,001,Maestría en Gerencia Empresarial,1-2024,2024,MGE-03,Métodos Cuantitativos,1,4,A,20,SI,20,Prof. José Ramírez
+12345678,Ana María Pérez Rojas,001,Maestría en Gerencia Empresarial,1-2025,2025,MGE-04,Gestión de Operaciones,2,4,A,17,SI,17,Prof. María López
+12345678,Ana María Pérez Rojas,001,Maestría en Gerencia Empresarial,1-2025,2025,MGE-05,Seminario de Trabajo de Grado,2,3,A,19,SI,19,Prof. Pedro González
+87654321,Luis Alberto Gómez Silva,002,Especialización en Finanzas,1-2024,2024,FIN-01,Finanzas Corporativas,1,4,B,15,SI,15,Prof. Daniela Torres
+87654321,Luis Alberto Gómez Silva,002,Especialización en Finanzas,1-2024,2024,FIN-02,Mercados de Capitales,1,3,B,14,SI,14,Prof. Andrés Herrera
+87654321,Luis Alberto Gómez Silva,002,Especialización en Finanzas,1-2025,2025,FIN-03,Riesgo Financiero,2,4,B,8,NO,8,Prof. Sofía Blanco
+87654321,Luis Alberto Gómez Silva,002,Especialización en Finanzas,1-2025,2025,FIN-04,Valoración de Empresas,2,3,B,16,SI,16,Prof. Daniela Torres
