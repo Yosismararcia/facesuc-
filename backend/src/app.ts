@@ -6,6 +6,7 @@ import rateLimit from 'express-rate-limit';
 import { env } from './config/env';
 import authRoutes from './routes/auth.routes';
 import constanciasRoutes from './routes/constancias.routes';
+import consultaRoutes from './routes/consulta.routes';
 import usuariosRoutes from './routes/usuarios.routes';
 import { errorHandler, notFound } from './middleware/errorHandler';
 
@@ -85,6 +86,7 @@ app.get('/api/health', (_req, res) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/constancias', constanciasRoutes);
+app.use('/api/consultas', consultaRoutes);
 app.use('/api/usuarios', usuariosRoutes);
 
 app.use(notFound);

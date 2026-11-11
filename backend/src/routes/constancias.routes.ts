@@ -4,6 +4,8 @@ import { asyncHandler } from '../utils/asyncHandler';
 import { obtenerConstancia } from '../services/constancia.service';
 import { generarConstanciaDocx } from '../services/docx.service';
 import { generarConstanciaPdf } from '../services/pdf.service';
+import { registrarConsulta } from '../services/consulta.service';
+import { AuthRequest } from '../types/auth';
 
 const router = Router();
 
@@ -20,6 +22,18 @@ router.get(
   requireAuth,
   asyncHandler(async (req, res) => {
     const constancia = await obtenerConstancia(req.params.cedula);
+
+    const { user } = req as AuthRequest;
+    const usuarioId = Number(user?.sub);
+    await registrarConsulta(
+      constancia.cedula,
+      usuarioId,
+      req.ip ?? undefined,
+      req.get('User-Agent') ?? undefined,
+    ).catch(() => {
+      // No fallar la consulta si el registro de auditoría falla
+    });
+
     res.json(constancia);
   }),
 );

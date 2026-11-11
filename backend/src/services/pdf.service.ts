@@ -4,236 +4,33 @@ import PDFDocument from 'pdfkit';
 import { env } from '../config/env';
 import { ConstanciaData } from './constancia.service';
 
-const PAGE_WIDTH = 595.28;
-const PAGE_HEIGHT = 841.89;
-const MARGIN = 40;
-const CONTENT_WIDTH = PAGE_WIDTH - MARGIN * 2;
-const BOTTOM_LIMIT = PAGE_HEIGHT - 70;
+// --- Especificaciones exactas de la plantilla Notas.docx (twips -> puntos) ---
+// 1 twip = 1/20 punto
+const PAGE_WIDTH = 612;   // Letter
+const PAGE_HEIGHT = 792;  // Letter
 
-const VINOTINTO = '#7B1E3B';
-const VINOTINTO_DARK = '#5A1229';
-const VINOTINTO_SOFT = '#FBF2F5';
-const BORDER = '#D8C2CA';
-const TEXT = '#1F2937';
-const MUTED = '#6B7280';
+// Márgenes de la plantilla: top 1417, bottom 1417, left 1701, right 1701 twips
+const MARGIN_TOP = 1417 / 20;    // 70.85 pt
+const MARGIN_BOTTOM = 1417 / 20; // 70.85 pt
+const MARGIN_LEFT = 1701 / 20;   // 85.05 pt
+const MARGIN_RIGHT = 1701 / 20;  // 85.05 pt
 
-const TABLE_FONT_SIZE = 7.2;
-const CELL_PADDING = 3;
+const CONTENT_WIDTH = PAGE_WIDTH - MARGIN_LEFT - MARGIN_RIGHT;
 
-interface Columna {
-  key: keyof ConstanciaData['materias'][number];
-  label: string;
-  width: number;
-  align: 'left' | 'center' | 'right';
-}
-
-const COLUMNAS: Columna[] = [
-  { key: 'codigo', label: 'Código', width: 42, align: 'left' },
-  { key: 'asignatura', label: 'Asignatura', width: 125, align: 'left' },
-  { key: 'uc', label: 'UC', width: 24, align: 'center' },
-  { key: 'periodo', label: 'Período', width: 46, align: 'center' },
-  { key: 'seccion', label: 'Sección', width: 32, align: 'center' },
-  { key: 'nota', label: 'Nota', width: 28, align: 'center' },
-  { key: 'nota_letras', label: 'En letras', width: 58, align: 'left' },
-  { key: 'aprobada', label: 'Aprobada', width: 40, align: 'center' },
-  { key: 'profesor', label: 'Profesor', width: 120, align: 'left' },
-];
+const FONT = 'Helvetica'; // equivalente a Arial
 
 function leerLogo(ruta: string): Buffer | null {
   const absoluta = path.resolve(ruta);
-
   if (!fs.existsSync(absoluta)) {
     return null;
   }
-
   return fs.readFileSync(absoluta);
-}
-
-function valorCelda(materia: ConstanciaData['materias'][number], clave: Columna['key']): string {
-  const valor = materia[clave];
-  return valor === null || valor === undefined ? '' : String(valor);
-}
-
-function dibujarLogo(
-  doc: PDFKit.PDFDocument,
-  buffer: Buffer,
-  x: number,
-  y: number,
-  maxW: number,
-  maxH: number,
-  align?: 'center' | 'right',
-): void {
-  doc.image(buffer, x, y, {
-    fit: [maxW, maxH],
-    ...(align ? { align } : {}),
-    valign: 'center',
-  });
-}
-
-function dibujarEncabezadoInstitucional(doc: PDFKit.PDFDocument, data: ConstanciaData): number {
-  const logoUC = leerLogo(env.LOGO_UC_PATH);
-  const logoFaces = leerLogo(env.LOGO_FACES_PATH);
-
-  if (logoUC) {
-    dibujarLogo(doc, logoUC, MARGIN, 32, 62, 72);
-  }
-
-  if (logoFaces) {
-    dibujarLogo(doc, logoFaces, PAGE_WIDTH - MARGIN - 95, 42, 95, 52, 'right');
-  }
-
-  const centroX = 115;
-  const centroAncho = CONTENT_WIDTH - 175;
-
-  doc
-    .font('Helvetica-Bold')
-    .fontSize(11)
-    .fillColor(VINOTINTO)
-    .text('UNIVERSIDAD DE CARABOBO', centroX, 34, { width: centroAncho, align: 'center' });
-
-  doc
-    .fontSize(8.5)
-    .fillColor(TEXT)
-    .text('FACULTAD DE CIENCIAS ECONÓMICAS Y SOCIALES', centroX, 50, {
-      width: centroAncho,
-      align: 'center',
-    });
-
-  doc
-    .font('Helvetica-Bold')
-    .fontSize(8)
-    .fillColor(MUTED)
-    .text('COORDINACIÓN DE POSTGRADO', centroX, 64, { width: centroAncho, align: 'center' });
-
-  doc
-    .font('Helvetica-Bold')
-    .fontSize(14)
-    .fillColor(VINOTINTO_DARK)
-    .text('CONSTANCIA DE NOTAS', centroX, 82, { width: centroAncho, align: 'center' });
-
-  doc
-    .moveTo(centroX, 104)
-    .lineTo(centroX + centroAncho, 104)
-    .lineWidth(1.2)
-    .strokeColor(VINOTINTO)
-    .stroke();
-
-  doc
-    .font('Helvetica-Bold')
-    .fontSize(7.5)
-    .fillColor(MUTED)
-    .text(
-      `Emitida para ${data.nombres} · ${data.cedula_formateada}`,
-      centroX,
-      128,
-      { width: centroAncho, align: 'center' },
-    );
-
-  return 130;
-}
-
-function dibujarEncabezadoTabla(doc: PDFKit.PDFDocument, y: number): number {
-  const altura = 20;
-  let x = MARGIN;
-
-  doc.rect(MARGIN, y, CONTENT_WIDTH, altura).fill(VINOTINTO);
-
-  for (const columna of COLUMNAS) {
-    doc
-      .font('Helvetica-Bold')
-      .fontSize(TABLE_FONT_SIZE)
-      .fillColor('#FFFFFF')
-      .text(columna.label, x + CELL_PADDING, y + 6, {
-        width: columna.width - CELL_PADDING * 2,
-        align: columna.align,
-        lineBreak: false,
-      });
-    x += columna.width;
-  }
-
-  doc
-    .rect(MARGIN, y, CONTENT_WIDTH, altura)
-    .lineWidth(0.6)
-    .strokeColor(VINOTINTO_DARK)
-    .stroke();
-
-  return y + altura;
-}
-
-function alturaFila(doc: PDFKit.PDFDocument, materia: ConstanciaData['materias'][number]): number {
-  let mayor = 0;
-
-  doc.font('Helvetica').fontSize(TABLE_FONT_SIZE);
-
-  for (const columna of COLUMNAS) {
-    const texto = valorCelda(materia, columna.key) || ' ';
-    const altura = doc.heightOfString(texto, {
-      width: columna.width - CELL_PADDING * 2,
-      align: columna.align,
-    });
-    mayor = Math.max(mayor, altura);
-  }
-
-  return Math.max(18, mayor + CELL_PADDING * 2);
-}
-
-function dibujarFila(
-  doc: PDFKit.PDFDocument,
-  materia: ConstanciaData['materias'][number],
-  y: number,
-  indice: number,
-): number {
-  const altura = alturaFila(doc, materia);
-  let x = MARGIN;
-
-  if (indice % 2 === 1) {
-    doc.rect(MARGIN, y, CONTENT_WIDTH, altura).fill(VINOTINTO_SOFT);
-  }
-
-  for (const columna of COLUMNAS) {
-    const texto = valorCelda(materia, columna.key);
-    const aprobada = columna.key === 'aprobada';
-
-    doc
-      .font(aprobada && texto === 'NO' ? 'Helvetica-Bold' : 'Helvetica')
-      .fontSize(TABLE_FONT_SIZE)
-      .fillColor(aprobada && texto === 'NO' ? '#B91C1C' : TEXT)
-      .text(texto, x + CELL_PADDING, y + CELL_PADDING, {
-        width: columna.width - CELL_PADDING * 2,
-        align: columna.align,
-      });
-
-    doc
-      .moveTo(x, y)
-      .lineTo(x, y + altura)
-      .lineWidth(0.4)
-      .strokeColor(BORDER)
-      .stroke();
-
-    x += columna.width;
-  }
-
-  doc
-    .moveTo(MARGIN, y + altura)
-    .lineTo(MARGIN + CONTENT_WIDTH, y + altura)
-    .lineWidth(0.4)
-    .strokeColor(BORDER)
-    .stroke();
-
-  doc
-    .moveTo(MARGIN + CONTENT_WIDTH, y)
-    .lineTo(MARGIN + CONTENT_WIDTH, y + altura)
-    .lineWidth(0.4)
-    .strokeColor(BORDER)
-    .stroke();
-
-  return y + altura;
 }
 
 export function generarConstanciaPdf(data: ConstanciaData): Promise<Buffer> {
   return new Promise<Buffer>((resolve, reject) => {
     const doc = new PDFDocument({
-      size: 'A4',
+      size: 'letter',
       margin: 0,
       bufferPages: true,
       info: {
@@ -249,144 +46,225 @@ export function generarConstanciaPdf(data: ConstanciaData): Promise<Buffer> {
     doc.on('end', () => resolve(Buffer.concat(partes)));
     doc.on('error', reject);
 
-    let y = dibujarEncabezadoInstitucional(doc, data);
+    // --- Logos encabezado (misma posición que Word) ---
+    const logoUC = leerLogo(env.LOGO_UC_PATH);
+    const logoFaces = leerLogo(env.LOGO_FACES_PATH);
 
-    doc
-      .font('Helvetica-Bold')
-      .fontSize(9.5)
-      .fillColor(TEXT)
-      .text(
-        'Quien suscribe, en su carácter de autoridad académica de la Coordinación de Postgrado de la Facultad de Ciencias Económicas y Sociales de la Universidad de Carabobo, hace constar que el (la) ciudadano(a) ',
-        MARGIN,
-        y,
-        { width: CONTENT_WIDTH, align: 'justify' },
-      );
+    const logoSize = 40;
 
-    doc
-      .font('Helvetica-Bold')
-      .fontSize(9.5)
-      .fillColor(VINOTINTO_DARK)
-      .text(data.nombres, MARGIN, doc.y + 2, { width: CONTENT_WIDTH });
-
-    doc
-      .font('Helvetica-Bold')
-      .fontSize(9.5)
-      .fillColor(TEXT)
-      .text(
-        `titular de la Cédula de Identidad ${data.cedula_formateada}, cursó y aprobó las asignaturas que se indican a continuación:`,
-        MARGIN,
-        doc.y + 2,
-        { width: CONTENT_WIDTH, align: 'justify' },
-      );
-
-    doc
-      .font('Helvetica-Bold')
-      .fontSize(9)
-      .fillColor(VINOTINTO_DARK)
-      .text('Programa: ', MARGIN, doc.y + 8, { continued: true })
-      .font('Helvetica-Bold')
-      .fillColor(TEXT)
-      .text(`${data.programa} (Código ${data.programa_codigo})`);
-
-    y = doc.y + 10;
-    y = dibujarEncabezadoTabla(doc, y);
-
-    data.materias.forEach((materia, indice) => {
-      const altura = alturaFila(doc, materia);
-
-      if (y + altura > BOTTOM_LIMIT) {
-        doc.addPage();
-        y = MARGIN;
-        y = dibujarEncabezadoTabla(doc, y);
-      }
-
-      y = dibujarFila(doc, materia, y, indice);
-    });
-
-    if (y + 150 > BOTTOM_LIMIT) {
-      doc.addPage();
-      y = MARGIN;
+    if (logoUC) {
+      doc.image(logoUC, MARGIN_LEFT, MARGIN_TOP - 8, {
+        width: logoSize,
+        height: logoSize,
+      });
     }
 
-    y += 16;
-
-    const resumen = [
-      ['Total de asignaturas', String(data.total_asignaturas)],
-      ['Créditos cursados', String(data.total_creditos)],
-      ['Créditos aprobados', String(data.creditos_aprobados)],
-      ['Índice académico', data.indice_academico],
-    ];
-
-    for (const [etiqueta, valor] of resumen) {
-      doc
-        .font('Helvetica-Bold')
-        .fontSize(9)
-        .fillColor(VINOTINTO_DARK)
-        .text(`${etiqueta}: `, MARGIN, y, { continued: true })
-        .font('Helvetica-Bold')
-        .fillColor(TEXT)
-        .text(valor);
-      y = doc.y + 2;
+    if (logoFaces) {
+      doc.image(logoFaces, PAGE_WIDTH - MARGIN_RIGHT - logoSize, MARGIN_TOP - 8, {
+        width: logoSize,
+        height: logoSize,
+      });
     }
 
-    y += 10;
-
+    // --- Título principal: REPORTE INTERNO DE NOTAS ---
+    // Plantilla: centrado, negrita, sz:26 (13pt), fuente Arial
     doc
+      .font(FONT)
+      .fontSize(13)
       .font('Helvetica-Bold')
-      .fontSize(9.5)
-      .fillColor(TEXT)
-      .text(
-        `Constancia que se expide a los fines que estime convenientes, en la ciudad de Valencia, a los ${data.fecha_actual}.`,
-        MARGIN,
-        y,
-        { width: CONTENT_WIDTH, align: 'justify' },
-      );
-
-    if (doc.y + 110 > BOTTOM_LIMIT) {
-      doc.addPage();
-      y = MARGIN;
-    } else {
-      y = doc.y + 24;
-    }
-
-    const firmaAncho = 210;
-    const firmaX = (PAGE_WIDTH - firmaAncho) / 2;
-
-    doc
-      .moveTo(firmaX, y)
-      .lineTo(firmaX + firmaAncho, y)
-      .lineWidth(0.8)
-      .strokeColor(TEXT)
-      .stroke();
-
-    doc
-      .font('Helvetica-Bold')
-      .fontSize(9)
-      .fillColor(TEXT)
-      .text('Coordinación de Postgrado', firmaX, y + 6, { width: firmaAncho, align: 'center' });
-
-    doc
-      .font('Helvetica-Bold')
-      .fontSize(8)
-      .fillColor(MUTED)
-      .text('FACES - Universidad de Carabobo', firmaX, y + 19, {
-        width: firmaAncho,
+      .text('REPORTE INTERNO DE NOTAS', MARGIN_LEFT, MARGIN_TOP + 5, {
+        width: CONTENT_WIDTH,
         align: 'center',
       });
 
-    const rango = doc.bufferedPageRange();
+    // --- Párrafo introductorio ---
+    // Plantilla: justificado, normal, sz:default (11pt), fuente Arial
+    doc
+      .font(FONT)
+      .fontSize(11)
+      .font('Helvetica')
+      .text(
+        `Reporte interno de Notas para la ciudadana ${data.nombres}, titular de la cedula de identidad ${data.cedula_formateada}, cursó las siguientes asignaturas correspondiente al programa:`,
+        MARGIN_LEFT,
+        doc.y + 6,
+        { width: CONTENT_WIDTH, align: 'justify' },
+      );
 
-    for (let pagina = rango.start; pagina < rango.start + rango.count; pagina += 1) {
-      doc.switchToPage(pagina);
+    // --- Programa ---
+    // Plantilla: centrado, negrita, sz:26 (13pt)
+    doc
+      .font(FONT)
+      .fontSize(13)
+      .font('Helvetica-Bold')
+      .text(data.programa, MARGIN_LEFT, doc.y + 6, {
+        width: CONTENT_WIDTH,
+        align: 'center',
+      });
+
+    // --- Espacio antes tabla ---
+    doc.moveDown(0.3);
+
+    // --- Tabla de materias ---
+    // Plantilla: 7 columnas, encabezado negrita sz:20 (10pt) centrado, datos sz:15 (7.5pt)
+    const TABLE_START_Y = doc.y;
+    const COLUMNS = 7;
+    const colWidth = CONTENT_WIDTH / COLUMNS;
+
+    const headers = ['Asignatura', 'Niv.', 'UC', 'Periodo', 'Sec.', 'Notas', 'Notas en letras'];
+    const aligns = ['center', 'center', 'center', 'center', 'left', 'center', 'center'];
+
+    let y = TABLE_START_Y;
+
+    // Encabezado de tabla
+    headers.forEach((header, i) => {
       doc
-        .font('Helvetica')
+        .font(FONT)
+        .fontSize(10)
+        .font('Helvetica-Bold')
+        .text(header, MARGIN_LEFT + i * colWidth, y, {
+          width: colWidth,
+          align: aligns[i] as 'center' | 'left' | 'right' | 'justify',
+        });
+    });
+
+    // Línea bajo encabezado
+    doc
+      .lineWidth(0.5)
+      .moveTo(MARGIN_LEFT, y + 13)
+      .lineTo(MARGIN_LEFT + CONTENT_WIDTH, y + 13)
+      .stroke();
+
+    y += 15;
+
+    // Filas de datos
+    data.materias.forEach((materia, index) => {
+      const rowHeight = 13;
+
+      const values = [
+        materia.asignatura,
+        String(materia.nivel),
+        String(materia.uc),
+        materia.periodo,
+        materia.seccion || '',
+        materia.nota,
+        materia.nota_letras,
+      ];
+
+      values.forEach((val, i) => {
+        doc
+          .font(FONT)
+          .fontSize(7.5)
+          .font('Helvetica')
+          .text(val, MARGIN_LEFT + i * colWidth, y, {
+            width: colWidth,
+            align: aligns[i] as 'center' | 'left' | 'right' | 'justify',
+          });
+      });
+
+      // Línea entre filas
+      if (index < data.materias.length - 1) {
+        doc
+          .lineWidth(0.3)
+          .moveTo(MARGIN_LEFT, y + rowHeight)
+          .lineTo(MARGIN_LEFT + CONTENT_WIDTH, y + rowHeight)
+          .stroke();
+      }
+
+      y += rowHeight;
+    });
+
+    // --- Tabla de resumen ---
+    // Plantilla: 2 columnas, etiqueta derecha negrita sz:16 (8pt), valor centro negrita sz:16 (8pt)
+    y += 10;
+
+    const resumen = [
+      ['Total de créditos Cursados:', String(data.total_creditos)],
+      ['Total de créditos Aprobados:', String(data.creditos_aprobados)],
+      ['Índice Académico:', data.indice_academico],
+    ];
+
+    const labelWidth = CONTENT_WIDTH * 0.7;
+    const valueWidth = CONTENT_WIDTH * 0.3;
+
+    resumen.forEach(([label, valor]) => {
+      doc
+        .font(FONT)
+        .fontSize(8)
+        .font('Helvetica-Bold')
+        .text(label, MARGIN_LEFT, y, {
+          width: labelWidth,
+          align: 'right',
+        });
+
+      doc
+        .font(FONT)
+        .fontSize(8)
+        .font('Helvetica-Bold')
+        .text(valor, MARGIN_LEFT + labelWidth, y, {
+          width: valueWidth,
+          align: 'center',
+        });
+
+      y += 11;
+    });
+
+    // --- Profesor / Coordinación ---
+    // Plantilla: centrado, negrita, sz:default (11pt)
+    y += 5;
+
+    doc
+      .font(FONT)
+      .fontSize(11)
+      .font('Helvetica-Bold')
+      .text(data.profesor_coordinacion, MARGIN_LEFT, y, {
+        width: CONTENT_WIDTH,
+        align: 'center',
+      });
+
+    y += 13;
+
+    // --- Dirección ---
+    // Plantilla: centrado, negrita, sz:20 (10pt)
+    doc
+      .font(FONT)
+      .fontSize(10)
+      .font('Helvetica-Bold')
+      .text('Dirección de Asuntos Estudiantiles – Postgrado', MARGIN_LEFT, y, {
+        width: CONTENT_WIDTH,
+        align: 'center',
+      });
+
+    y += 18;
+
+    // --- Párrafo final ---
+    // Plantilla: centrado, normal, sz:26 (13pt)
+    doc
+      .font(FONT)
+      .fontSize(13)
+      .font('Helvetica')
+      .text(
+        `Constancia que se expide a los fines que estime convenientes, en la ciudad de Valencia, a los ${data.fecha_actual}.`,
+        MARGIN_LEFT,
+        y,
+        { width: CONTENT_WIDTH, align: 'center' },
+      );
+
+    // Número de página discreto al pie
+    const totalPages = doc.bufferedPageRange().count;
+    for (let i = 0; i < totalPages; i += 1) {
+      doc.switchToPage(i);
+      doc
+        .font(FONT)
         .fontSize(7)
-        .fillColor(MUTED)
+        .font('Helvetica')
         .text(
-          `Documento generado automáticamente · Página ${pagina + 1} de ${rango.count}`,
-          MARGIN,
-          PAGE_HEIGHT - 34,
-          { width: CONTENT_WIDTH, align: 'center', lineBreak: false },
+          `Página ${i + 1} de ${totalPages}`,
+          MARGIN_LEFT,
+          PAGE_HEIGHT - 35,
+          {
+            width: CONTENT_WIDTH,
+            align: 'center',
+          },
         );
     }
 

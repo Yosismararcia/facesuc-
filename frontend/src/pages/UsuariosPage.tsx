@@ -15,6 +15,7 @@ type Rol = 'ROOT' | 'ADMIN';
 interface FormularioUsuario {
   cedula: string;
   nombre: string;
+  email: string;
   password: string;
   rol: Rol;
   activo: boolean;
@@ -23,6 +24,7 @@ interface FormularioUsuario {
 const FORMULARIO_VACIO: FormularioUsuario = {
   cedula: '',
   nombre: '',
+  email: '',
   password: '',
   rol: 'ADMIN',
   activo: true,
@@ -72,6 +74,7 @@ export default function UsuariosPage() {
     setFormulario({
       cedula: item.cedula,
       nombre: item.nombre,
+      email: '',
       password: '',
       rol: item.rol,
       activo: item.activo,
@@ -96,8 +99,18 @@ export default function UsuariosPage() {
 
     const digitos = formulario.cedula.replace(/\D/g, '');
 
-    if (!editando && !/^\d{5,9}$/.test(digitos)) {
-      setError('Ingrese una cédula válida (entre 5 y 9 dígitos).');
+    if (!/^\d{5,9}$/.test(digitos)) {
+      setError('La cédula debe contener entre 5 y 9 dígitos numéricos.');
+      return;
+    }
+
+    if (!formulario.email) {
+      setError('El correo electrónico es obligatorio.');
+      return;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formulario.email.trim())) {
+      setError('Ingrese un correo electrónico válido.');
       return;
     }
 
@@ -106,7 +119,17 @@ export default function UsuariosPage() {
       return;
     }
 
-    if ((!editando || formulario.password) && formulario.password.length < 6) {
+    if (!/^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s\.']+$/.test(formulario.nombre.trim())) {
+      setError('El nombre solo puede contener letras, espacios, puntos y apóstrofos.');
+      return;
+    }
+
+    if (!editando && !formulario.password) {
+      setError('La contraseña es obligatoria para nuevos usuarios.');
+      return;
+    }
+
+    if (formulario.password && formulario.password.length < 6) {
       setError('La contraseña debe tener al menos 6 caracteres.');
       return;
     }
@@ -117,6 +140,7 @@ export default function UsuariosPage() {
       if (editando) {
         await actualizarUsuario(token, editando.id, {
           nombre: formulario.nombre.trim(),
+          email: formulario.email.trim().toLowerCase(),
           rol: formulario.rol,
           activo: formulario.activo,
           ...(formulario.password ? { password: formulario.password } : {}),
@@ -126,6 +150,7 @@ export default function UsuariosPage() {
         await crearUsuario(token, {
           cedula: digitos,
           nombre: formulario.nombre.trim(),
+          email: formulario.email.trim().toLowerCase(),
           password: formulario.password,
           rol: formulario.rol,
         });
@@ -356,7 +381,10 @@ export default function UsuariosPage() {
                     className="input"
                     value={formulario.cedula}
                     onChange={(evento) =>
-                      setFormulario((actual) => ({ ...actual, cedula: evento.target.value }))
+                      setFormulario((actual) => ({
+                        ...actual,
+                        cedula: evento.target.value.replace(/\D/g, ''),
+                      }))
                     }
                     disabled={Boolean(editando) || guardando}
                     placeholder="Ej. 12345678"
@@ -364,6 +392,26 @@ export default function UsuariosPage() {
                 </div>
 
                 <div>
+                  <label htmlFor="usuario-email" className="label">
+                    Correo electrónico
+                  </label>
+                  <input
+                    id="usuario-email"
+                    type="email"
+                    className="input"
+                    value={formulario.email}
+                    onChange={(evento) =>
+                      setFormulario((actual) => ({
+                        ...actual,
+                        email: evento.target.value.trim(),
+                      }))
+                    }
+                    disabled={guardando}
+                    placeholder="Ej. nombre@uc.edu.ve"
+                  />
+                </div>
+
+                <div className="sm:col-span-2">
                   <label htmlFor="usuario-rol" className="label">
                     Rol
                   </label>

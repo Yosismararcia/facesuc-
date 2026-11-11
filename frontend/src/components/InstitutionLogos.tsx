@@ -37,6 +37,14 @@ export default function InstitutionLogos({
           compact ? 'hidden h-8 sm:block' : 'h-12'
         }`}
       />
+
+      <img
+        src="/logos/faces-postgrado.png"
+        alt="Logo de FACES Postgrado"
+        className={`w-auto object-contain ${
+          compact ? 'hidden h-8 sm:block' : 'h-10'
+        }`}
+      />
     </div>
   );
 }

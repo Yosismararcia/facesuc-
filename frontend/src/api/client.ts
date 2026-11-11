@@ -13,12 +13,14 @@ export interface UsuarioListado extends Usuario {
 export interface NuevoUsuario {
   cedula: string;
   nombre: string;
+  email: string;
   password: string;
   rol: 'ROOT' | 'ADMIN';
 }
 
 export interface CambiosUsuario {
   nombre?: string;
+  email?: string;
   password?: string;
   rol?: 'ROOT' | 'ADMIN';
   activo?: boolean;
@@ -54,6 +56,7 @@ export interface ConstanciaData {
   indice_academico: string;
   fecha_actual: string;
   ultimo_periodo: string;
+  profesor_coordinacion: string;
   materias: MateriaConstancia[];
 }
 
@@ -199,4 +202,15 @@ export async function actualizarUsuario(
     body: JSON.stringify(datos),
   });
   return respuesta.usuario;
+}
+
+export async function registrarConsultaApi(
+  token: string,
+  cedula: string,
+): Promise<{ consulta: { id: number; fechaConsulta: string } }> {
+  return peticionJson<{ consulta: { id: number; fechaConsulta: string } }>('/consultas', {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify({ cedula }),
+  });
 }

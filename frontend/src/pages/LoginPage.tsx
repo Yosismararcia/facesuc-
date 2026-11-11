@@ -50,6 +50,11 @@ export default function LoginPage() {
               alt="FACES - Asuntos Estudiantiles"
               className="h-12 max-h-14 w-auto object-contain drop-shadow-md"
             />
+            <img
+              src="/logos/faces-postgrado.png"
+              alt="FACES Postgrado"
+              className="h-12 max-h-14 w-auto object-contain drop-shadow-md"
+            />
           </header>
 
           <main className="flex-1 flex flex-col items-center justify-center text-center space-y-8">
@@ -103,7 +108,7 @@ export default function LoginPage() {
 
           <footer className="mt-auto mb-4 text-center animate-slide-up" style={{ animationDelay: '700ms' }}>
             <p className="text-xs text-vinotinto-200/60 uppercase tracking-wider font-medium">
-              Uso exclusivo del personal autorizado · Roles ROOT y ADMIN
+              Uso exclusivo del personal autorizado
             </p>
           </footer>
         </div>
@@ -113,9 +118,15 @@ export default function LoginPage() {
       <main className="flex min-h-screen items-center justify-center px-5 py-10 lg:min-h-0">
         <div className="w-full max-w-md animate-fade-in" style={{ animationDelay: '100ms' }}>
           <div className="mb-8 lg:hidden">
-            <div className="flex justify-center">
-              <div className="w-20 h-20 rounded-xl overflow-hidden ring-2 ring-vinotinto-200 bg-white shadow-md">
+            <div className="flex justify-center gap-2">
+              <div className="w-16 h-16 rounded-xl overflow-hidden ring-2 ring-vinotinto-200 bg-white shadow-md">
                 <img src="/logos/uc.png" alt="UC" className="w-full h-full object-contain" />
+              </div>
+              <div className="w-16 h-16 rounded-xl overflow-hidden ring-2 ring-vinotinto-200 bg-white shadow-md">
+                <img src="/logos/faces.png" alt="FACES" className="w-full h-full object-contain" />
+              </div>
+              <div className="w-16 h-16 rounded-xl overflow-hidden ring-2 ring-vinotinto-200 bg-white shadow-md">
+                <img src="/logos/faces-postgrado.png" alt="FACES Postgrado" className="w-full h-full object-contain" />
               </div>
             </div>
           </div>
@@ -132,7 +143,7 @@ export default function LoginPage() {
           </div>
 
           <p className="mt-6 text-center text-xs text-slate-500">
-            Facultad de Ciencias Económicas y Sociales · Universidad de Carabobo
+             Universidad de Carabobo ·Facultad de Ciencias Económicas y Sociales
           </p>
         </div>
       </main>

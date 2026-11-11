@@ -33,13 +33,14 @@ model Programa {
 // Estudiantes identificados de forma única por cédula.
 // ---------------------------------------------------------------------------
 model Estudiante {
-  id         Int             @id @default(autoincrement())
-  cedula     String          @unique @db.VarChar(20)
-  nombres    String          @db.VarChar(255)
-  programaId Int             @map("programa_id")
-  creadoEn   DateTime        @default(now()) @map("creado_en") @db.Timestamp(3)
-  programa   Programa        @relation(fields: [programaId], references: [id], onDelete: Restrict)
+  id         Int                  @id @default(autoincrement())
+  cedula     String               @unique @db.VarChar(20)
+  nombres    String               @db.VarChar(255)
+  programaId Int                  @map("programa_id")
+  creadoEn   DateTime             @default(now()) @map("creado_en") @db.Timestamp(3)
+  programa   Programa             @relation(fields: [programaId], references: [id], onDelete: Restrict)
   notas      HistoricoNota[]
+  consultas  ConsultaEstudiante[]
 
   @@index([programaId], map: "idx_estudiantes_programa")
   @@map("estudiantes")
@@ -67,14 +68,15 @@ model Asignatura {
 // Usuarios internos (root / administradores). Contraseña con hash bcrypt.
 // ---------------------------------------------------------------------------
 model Usuario {
-  id           Int      @id @default(autoincrement())
-  cedula       String   @unique @db.VarChar(20)
-  email        String?  @unique @db.VarChar(255)
-  nombre       String   @db.VarChar(255)
-  passwordHash String   @map("password_hash") @db.VarChar(255)
-  rol          Rol      @default(ADMIN)
-  activo       Boolean  @default(true)
-  creadoEn     DateTime @default(now()) @map("creado_en") @db.Timestamp(3)
+  id           Int                  @id @default(autoincrement())
+  cedula       String               @unique @db.VarChar(20)
+  email        String?              @unique @db.VarChar(255)
+  nombre       String               @db.VarChar(255)
+  passwordHash String               @map("password_hash") @db.VarChar(255)
+  rol          Rol                  @default(ADMIN)
+  activo       Boolean              @default(true)
+  creadoEn     DateTime             @default(now()) @map("creado_en") @db.Timestamp(3)
+  consultas    ConsultaEstudiante[]
 
   @@map("usuarios")
 }
@@ -83,22 +85,45 @@ model Usuario {
 // Hechos académicos: una nota por estudiante/asignatura/período/año lectivo.
 // ---------------------------------------------------------------------------
 model HistoricoNota {
-  id              Int         @id @default(autoincrement())
-  estudianteId    Int         @map("estudiante_id")
-  asignaturaId    Int         @map("asignatura_id")
-  periodoLectivo  String      @map("periodo_lectivo") @db.VarChar(30)
-  annoLectivo     String      @map("anno_lectivo") @db.VarChar(10)
-  seccion         String      @default("") @db.VarChar(20)
-  notaFinal       Float       @map("nota_final")
-  aprobada        Boolean     @default(false)
-  calculoPromedio Float?      @map("calculo_promedio")
-  nombreProfesor  String?     @map("nombre_profesor") @db.VarChar(255)
-  creadoEn        DateTime    @default(now()) @map("creado_en") @db.Timestamp(3)
-  estudiante      Estudiante  @relation(fields: [estudianteId], references: [id], onDelete: Cascade)
-  asignatura      Asignatura  @relation(fields: [asignaturaId], references: [id], onDelete: Restrict)
+  id              Int        @id @default(autoincrement())
+  estudianteId    Int        @map("estudiante_id")
+  asignaturaId    Int        @map("asignatura_id")
+  periodoLectivo  String     @map("periodo_lectivo") @db.VarChar(30)
+  annoLectivo     String     @map("anno_lectivo") @db.VarChar(10)
+  seccion         String     @default("") @db.VarChar(20)
+  notaFinal       Float      @map("nota_final")
+  aprobada        Boolean    @default(false)
+  calculoPromedio Float?     @map("calculo_promedio")
+  nombreProfesor  String?    @map("nombre_profesor") @db.VarChar(255)
+  creadoEn        DateTime   @default(now()) @map("creado_en") @db.Timestamp(3)
+  estudiante      Estudiante @relation(fields: [estudianteId], references: [id], onDelete: Cascade)
+  asignatura      Asignatura @relation(fields: [asignaturaId], references: [id], onDelete: Restrict)
 
   @@unique([estudianteId, asignaturaId, periodoLectivo, annoLectivo], map: "uq_historico_notas")
   @@index([estudianteId], map: "idx_historico_estudiante")
   @@index([asignaturaId], map: "idx_historico_asignatura")
   @@map("historico_notas")
+}
+
+// ---------------------------------------------------------------------------
+// Registro de consultas de expedientes (auditoría de accesos).
+// Estructura en 3FN: cada fila depende únicamente de su clave primaria,
+// con claves foráneas a estudiantes y usuarios. Inicia vacía y se alimenta
+// automáticamente al buscar estudiantes.
+// ---------------------------------------------------------------------------
+model ConsultaEstudiante {
+  id            Int      @id @default(autoincrement())
+  estudianteId  Int      @map("estudiante_id")
+  usuarioId     Int      @map("usuario_id")
+  fechaConsulta DateTime @default(now()) @map("fecha_consulta") @db.Timestamp(3)
+  ipAddress     String?  @map("ip_address") @db.VarChar(45)
+  userAgent     String?  @map("user_agent") @db.VarChar(500)
+
+  estudiante Estudiante @relation(fields: [estudianteId], references: [id], onDelete: Cascade)
+  usuario    Usuario    @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@index([estudianteId], map: "idx_consulta_estudiante")
+  @@index([usuarioId], map: "idx_consulta_usuario")
+  @@index([fechaConsulta], map: "idx_consulta_fecha")
+  @@map("consulta_estudiante")
 }

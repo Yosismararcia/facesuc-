@@ -14,3 +14,4 @@ npm-debug.log*
 Zone.identifier
 __pycache__/
 *.pyc
+.csv
