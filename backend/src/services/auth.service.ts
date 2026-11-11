@@ -44,7 +44,7 @@ export async function autenticar(identificador: string, password: string): Promi
   const usuario = esEmail
     ? await prisma.usuario.findUnique({ where: { email: identificador.trim() } })
     : await prisma.usuario.findUnique({
-        where: { cedula: normalizarCedula(identificador) ?? identificador.trim() },
+        where: { cedula: normalizarCedula(identificador) },
       });
 
   if (!usuario || !usuario.activo) {

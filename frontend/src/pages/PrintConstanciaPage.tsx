@@ -94,6 +94,11 @@ export default function PrintConstanciaPage() {
             alt="FACES"
             className="h-[40pt] w-auto"
           />
+          <img
+            src="/logos/faces-postgrado.png"
+            alt="FACES Postgrado"
+            className="h-[40pt] w-auto"
+          />
         </div>
 
         {/* Título principal: centrado, negrita, 13pt */}
